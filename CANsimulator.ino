@@ -12,37 +12,73 @@ uint16_t voltage;
 bool fanOn;
 
 uint16_t speedCount;
+bool reverse;
 const uint16_t MAX_RPM = 14000;
 
 static CAN_message_t msg1;
 static CAN_message_t msg2;
 
 void demo() {
-	if (rpm != MAX_RPM) {
-		rpm += 25;
+	if (reverse) {
+		if (rpm != 0) {
+			rpm -= 25;
+		}
+		else {
+			oilTemp = random(4730, 4830);
+			waterTemp = random(4030, 4230);
+			brakeTemp = random(3730, 4230);
+			voltage = random(11900, 12900);
+
+			if (gear > 0) {
+				gear--;
+				rpm = 9000;
+			}
+			else {
+				rpm = 0;
+				speed = 0;
+			}
+		}
 	}
 	else {
-		oilTemp = random(4730, 4830);
-		waterTemp = random(4030, 4230);
-		brakeTemp = random(3730, 4230);
-		voltage = random(11900, 12900);
-
-		if (gear < 6) {
-			gear++;
-			rpm = 2000;
+		if (rpm != MAX_RPM) {
+			rpm += 25;
 		}
 		else {
-			rpm = 13500;
+			oilTemp = random(4730, 4830);
+			waterTemp = random(4030, 4230);
+			brakeTemp = random(3730, 4230);
+			voltage = random(11900, 12900);
+
+			if (gear < 6) {
+				gear++;
+				rpm = 2000;
+			}
+			else {
+				rpm = 13500;
+			}
 		}
 	}
 
-	if (speed < 255 && gear != 0) {
-		if (speedCount == 5) {
-			speed++;
-			speedCount = 0;
+	if (reverse) {
+		if (speed > 0) {
+			if (speedCount == 15) {
+				speed--;
+				speedCount = 0;
+			}
+			else {
+				speedCount++;
+			}
 		}
-		else {
-			speedCount++;
+	}
+	else {
+		if (speed < 200 && gear != 0) {
+			if (speedCount == 15) {
+				speed++;
+				speedCount = 0;
+			}
+			else {
+				speedCount++;
+			}
 		}
 	}
 }
@@ -58,6 +94,8 @@ void setup() {
 	oilTemp = 130;
 	waterTemp = 130;
 	voltage = 12000;
+
+	reverse = false;
 
 	// CAN message headers
 	msg1.id = 0x1;
@@ -103,11 +141,11 @@ void loop() {
 	}
 
 	if (gear == 6 && rpm == 14000) {
-
-		rpm = 0;
-		speed = 0;
-		gear = 0;
+		reverse = true;
+	}
+	if (reverse && gear == 0 && rpm == 0) {
+		reverse = false;
 	}
 
-	delay(2);
+	delay(5);
 }
